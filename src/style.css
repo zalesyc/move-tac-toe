@@ -1,2 +1,21 @@
 @import "tailwindcss";
 
+:root {
+  --player-1-color: rgb(200, 0, 0);
+  --player-2-color: rgb(0, 200, 0);
+}
+
+dialog {
+  top: 40%;
+  left: 50%;
+  translate: -50% -50%;
+}
+
+#currently-playing {
+  background-color: var(--player-1-color);
+}
+
+#currently-playing.player-2 {
+  background-color: var(--player-2-color);
+}
+

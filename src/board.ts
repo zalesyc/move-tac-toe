@@ -7,20 +7,21 @@ const baseStyle = `
 
 .piece {
   position: absolute;
-  border: 2px solid black;
-  width: 2rem;
-  height: 2rem;
+  width: calc((100% / var(--board-size)) * 0.3);
+  height: calc((100% / var(--board-size)) * 0.3);
+  border-radius: 5px;
   pointer-events: none;
+  box-shadow: 1px 2px 3px rgb(20 20 20 / 0.2);
   translate: -50% -50%;
   transition: all 50ms ease-in-out;
 }
 
 .piece-player1 {
-  background-color: red;
+  background-color: var(--player-1-color);
 }
 
 .piece-player2 {
-  background-color: green;
+  background-color: var(--player-2-color);
 }
 
 #board {
@@ -36,16 +37,16 @@ const baseStyle = `
 }`;
 
 export class GameBoard extends HTMLElement {
-  #tiles: Array<Array<Tile>>; // in the format [y][x]
+  #tiles: Array<Array<Tile>> = []; // in the format [y][x]
+  #allowDiagonalMoves: boolean = true;
   #styleSheet: CSSStyleSheet = new CSSStyleSheet();
+  #winLength: number = 3;
   #board: HTMLElement;
   #highlightedTiles: Array<Position> = [];
 
   // size must be divisible by 2
   constructor() {
     super();
-    const sizeAttribute = this.getAttribute("size");
-    const size = sizeAttribute ? parseInt(sizeAttribute) : 4;
 
     this.attachShadow({ mode: "open" });
 
@@ -53,11 +54,20 @@ export class GameBoard extends HTMLElement {
     this.#board.setAttribute("id", "board");
     this.shadowRoot?.appendChild(this.#board);
 
-    this.#styleSheet.replaceSync(
-      `${baseStyle} #board {--board-size: ${size};}`,
-    );
+    this.#styleSheet.replaceSync(baseStyle);
 
     this.shadowRoot!.adoptedStyleSheets.push(this.#styleSheet);
+
+    this.newGame(4, 3, true);
+  }
+
+  newGame(size: number, winLength: number, allowDiagonalMoves: boolean) {
+    this.#allowDiagonalMoves = allowDiagonalMoves;
+    this.#winLength = winLength;
+    this.#board.style.setProperty("--board-size", size.toString());
+    if (this.#tiles.length > 0) {
+      this.#board.innerHTML = "";
+    }
 
     this.#tiles = Array.from({ length: size }, (_, y) =>
       Array.from({ length: size }, (_, x) => {
@@ -106,17 +116,19 @@ export class GameBoard extends HTMLElement {
     }
 
     // diagonal
-    if (this.#isEmpty({ x: x - 1, y: y - 1 })) {
-      availableTiles.push({ x: x - 1, y: y - 1 });
-    }
-    if (this.#isEmpty({ x: x + 1, y: y + 1 })) {
-      availableTiles.push({ x: x + 1, y: y + 1 });
-    }
-    if (this.#isEmpty({ x: x + 1, y: y - 1 })) {
-      availableTiles.push({ x: x + 1, y: y - 1 });
-    }
-    if (this.#isEmpty({ x: x - 1, y: y + 1 })) {
-      availableTiles.push({ x: x - 1, y: y + 1 });
+    if (this.#allowDiagonalMoves) {
+      if (this.#isEmpty({ x: x - 1, y: y - 1 })) {
+        availableTiles.push({ x: x - 1, y: y - 1 });
+      }
+      if (this.#isEmpty({ x: x + 1, y: y + 1 })) {
+        availableTiles.push({ x: x + 1, y: y + 1 });
+      }
+      if (this.#isEmpty({ x: x + 1, y: y - 1 })) {
+        availableTiles.push({ x: x + 1, y: y - 1 });
+      }
+      if (this.#isEmpty({ x: x - 1, y: y + 1 })) {
+        availableTiles.push({ x: x - 1, y: y + 1 });
+      }
     }
     return availableTiles;
   }
@@ -143,7 +155,7 @@ export class GameBoard extends HTMLElement {
         for (const [directionX, directionY] of directions) {
           let isWinning = true;
 
-          for (let i = 1; i < this.#tiles.length - 1; i++) {
+          for (let i = 1; i < this.#winLength; i++) {
             const nextTile = this.at({
               y: y + directionY * i,
               x: x + directionX * i,

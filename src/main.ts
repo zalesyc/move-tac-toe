@@ -6,9 +6,37 @@ function main() {
   board!.addEventListener("tile-click", (e) =>
     onTileClick(board, (e as TileClickEvent).position),
   );
+  const newGameDialog = document.querySelector(
+    "#new-game-dialog",
+  ) as HTMLDialogElement;
+  document
+    .querySelector("#new-game-btn")
+    ?.addEventListener("click", () => newGameDialog.showModal());
+
+  document.querySelector("#new-game-form")?.addEventListener("submit", (e) => {
+    if ((e as SubmitEvent).submitter?.id === "new-game-close-btn") {
+      return;
+    }
+    const data = new FormData(
+      document.querySelector("#new-game-form") as HTMLFormElement,
+    );
+
+    // TODO: data validation
+
+    board.newGame(
+      parseInt((data.get("board-size") as string | null) ?? "4"),
+      parseInt((data.get("win-len") as string | null) ?? "3"),
+      data.get("allow-diagonals") === "on",
+    );
+    gameEnded = false;
+  });
 }
 
 function onTileClick(board: GameBoard, position: Position): void {
+  if (gameEnded) {
+    return;
+  }
+
   const tile = board.at(position)!;
 
   if (tile.piece !== null && tile.piece.player === playingPlayer) {
@@ -25,18 +53,30 @@ function onTileClick(board: GameBoard, position: Position): void {
     board.move(availableMoves.start, position);
     board.setHighlightedTiles([]);
     availableMoves = null;
-    playingPlayer =
-      playingPlayer == Player.Player1 ? Player.Player2 : Player.Player1;
-    document.getElementById("curently-playing")!.innerHTML =
-      playingPlayer == Player.Player1 ? "red" : "green";
+
+    if (playingPlayer == Player.Player2) {
+      playingPlayer = Player.Player1;
+      document
+        .getElementById("currently-playing")
+        ?.classList.remove("player-2");
+    } else {
+      playingPlayer = Player.Player2;
+      document.getElementById("currently-playing")?.classList.add("player-2");
+    }
+
     const winning = board.winning();
     if (winning) {
-      alert(`${winning == Player.Player1 ? "red" : "green"} has won`);
+      document.querySelector("#win-text")!.innerHTML =
+        `${winning == Player.Player1 ? "red" : "green"} has won`;
+      (document.querySelector("#win-dialog") as HTMLDialogElement).showModal();
+      gameEnded = true;
     }
   }
 }
 
 customElements.define("game-board", GameBoard);
 let playingPlayer: Player = Player.Player1;
+let gameEnded = false;
 let availableMoves: { start: Position; moves: Array<Position> } | null = null;
+
 main();
