@@ -66,8 +66,8 @@ function onTileClick(board: GameBoard, position: Position): void {
 
     const winning = board.winning();
     if (winning) {
-      document.querySelector("#win-text")!.innerHTML =
-        `${winning == Player.Player1 ? "red" : "green"} has won`;
+      document.querySelector("#win-player-text")!.innerHTML =
+        `${winning == Player.Player1 ? "red" : "green"}`;
       (document.querySelector("#win-dialog") as HTMLDialogElement).showModal();
       gameEnded = true;
     }
