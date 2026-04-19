@@ -13,6 +13,7 @@
     "vite": "^8.0.1"
   },
   "dependencies": {
+    "@awesome.me/webawesome": "^3.5.0",
     "@emnapi/core": "^1.9.2",
     "@emnapi/runtime": "^1.9.2",
     "@tailwindcss/vite": "^4.2.2",

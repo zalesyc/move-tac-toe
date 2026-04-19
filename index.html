@@ -1,80 +1,111 @@
 <!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link href="/src/style.css" rel="stylesheet" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script defer type="module" src="/src/main.ts"></script>
+    <title>move-tac-toe</title>
+  </head>
 
-<head>
-  <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link href="/src/style.css" rel="stylesheet" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script defer type="module" src="/src/main.ts"></script>
-  <title>move-tac-toe</title>
-</head>
+  <body
+    class="max-w-2xl mr-auto ml-auto bg-zinc-200 flex flex-col gap-6 h-full mt-6"
+  >
+    <h1 class="font-bold text-4xl">Hybnéškvorky</h1>
 
-<body class="max-w-2xl mr-auto ml-auto bg-zinc-200 flex flex-col gap-6 h-full mt-6">
-  <h1 class="font-bold text-4xl">Hybnéškvorky</h1>
-
-  <div class="self-center space-y-3">
-    <div class="flex gap-6 justify-end">
-      <button id="new-game-btun" class="bg-neutral-400 rounded-xl shadow-xl p-4 text-white">
-        Join Game
-      </button>
-      <button id="new-game-btn" class="bg-teal-700 rounded-xl shadow-xl p-4 text-white hover:bg-teal-800">
-        New Game
-      </button>
-    </div>
-    <div class="border-zinc-400 bg-amber-100 border-2 rounded-md aspect-square w-[90vw] max-w-120">
-      <game-board id="board"></game-board>
-    </div>
-    <div class="flex items-center gap-4">
-      <p>Playing:</p>
-      <div id="currently-playing" class="w-10 h-10 rounded-full"></div>
-    </div>
-    <div class="justify-self-end">
-      <a href="https://github.com/zalesyc/move-tac-toe" class="underline">Zdrojový kód</a>
-    </div>
-  </div>
-
-  <!-- DIALOGS -->
-  <dialog id="new-game-dialog" class="p-5 bg-teal-700 rounded-xl shadow-xl text-white space-y-5">
-    <h2 class="text-lg font-bold">New Game:</h2>
-    <div class="flex *:p-3">
-      <button class="border-r-2 bg-fuchsia-700 border-white rounded-l-xl">
-        Local
-      </button>
-      <button class="rounded-r-xl bg-neutral-500">Online</button>
-    </div>
-
-    <form id="new-game-form" action="" method="dialog">
-      <div class="space-y-3">
-        <div>
-          <label for="board-size">Board size:</label>
-          <input type="number" name="board-size" id="board-size" min="4" max="10" step="2" value="4"
-            class="bg-neutral-200 rounded-sm text-black" />
-        </div>
-        <div>
-          <label for="win-len">Win length:</label>
-          <input type="number" name="win-len" id="win-len" value="3" class="bg-neutral-200 rounded-sm text-black" />
-        </div>
-        <div>
-          <label for="allow-diagonals">Allow diagonals:</label>
-          <input type="checkbox" name="allow-diagonals" id="allow-diagonals" />
-        </div>
+    <div class="self-center space-y-3">
+      <div class="flex gap-6 justify-end">
+        <wa-button variant="brand" id="join-game-btn"> Join Game </wa-button>
+        <wa-button id="new-game-btn"> New Game </wa-button>
       </div>
-      <div class="flex gap-4 *:p-3 *:rounded-xl">
-        <button id="new-game-play-btn" type="submit" class="bg-fuchsia-700 hover:bg-fuchsia-800">
-          Play!
-        </button>
-        <button id="new-game-close-btn" type="submit" formmethod="dialog" class="bg-red-700 hover:bg-red-800">
-          Close
-        </button>
+      <div
+        class="border-zinc-400 bg-amber-100 border-2 rounded-md aspect-square w-[90vw] max-w-120"
+      >
+        <game-board id="board"></game-board>
       </div>
-    </form>
-  </dialog>
+      <div class="flex items-center gap-4">
+        <p>Playing:</p>
+        <div id="currently-playing" class="w-10 h-10 rounded-full"></div>
+      </div>
+      <div class="justify-self-end">
+        <a href="https://github.com/zalesyc/move-tac-toe" class="underline"
+          >Zdrojový kód</a
+        >
+      </div>
+    </div>
 
-  <dialog id="win-dialog" class="p-5 bg-fuchsia-700 rounded-xl shadow-xl text-white space-y-5">
-    <p><span id="win-player-text"></span> has won</p>
-    <form method="dialog"><button class="bg-teal-700 p-4 rounded-2xl hover:bg-teal-800">Close</button></form>
-  </dialog>
-</body>
+    <!-- DIALOGS -->
+    <!-- New Game -->
+    <wa-dialog id="new-game-dialog" label="Nová Hra">
+      <form id="new-game-form" class="flex flex-col gap-1">
+        <wa-input
+          name="board-size"
+          label="Velikost hrací desky"
+          type="number"
+          min="4"
+          max="12"
+          step="2"
+          value="4"
+        ></wa-input>
+        <wa-input
+          name="win-len"
+          label="Délka výhry"
+          type="number"
+          hint="Musí být méně nebo stejně veliké jako veliost hrací desky"
+          min="2"
+          max="12"
+          value="3"
+        ></wa-input>
+        <wa-checkbox checked name="allow-diagonals">
+          Povolit diagonální tahy
+        </wa-checkbox>
+        <div class="flex gap-1 flex-1">
+          <wa-button type="submit"> Nová lokální Hra! </wa-button>
+          <wa-button type="submit" class="new-online-game">
+            Nová Online Hra
+          </wa-button>
+        </div>
+      </form>
+      <div id="online-game-wait-for-connection" class="flex flex-col gap-0.5">
+        <label>Kód pro připojení:</label>
+        <p
+          class="border border-neutral-700 rounded-xl p-0.5 text-lg font-semibold"
+        >
+          123547
+        </p>
 
+        <label>Čekání na připojení</label>
+        <wa-progress-bar
+          id="waiting-for-connection-progress"
+          indeterminate
+        ></wa-progress-bar>
+      </div>
+    </wa-dialog>
+
+    <!-- Join Game -->
+    <wa-dialog id="join-game-dialog" label="Připojit se ke hře">
+      <div class="flex flex-col gap-0.5">
+        <form id="join-online-form" class="flex flex-col gap-0.5">
+          <wa-input
+            label="Kód pro připojení"
+            pattern="[0-9a-zA-Z]{4}"
+            class="input-uppercase join-input"
+            name="connection-code"
+            maxlength="4"
+            minlength="4"
+          ></wa-input>
+          <wa-button type="submit" class="join-btn">Připojit</wa-button>
+        </form>
+        <wa-progress-bar
+          hidden
+          indeterminate
+          class="connection-progress"
+        ></wa-progress-bar>
+      </div>
+    </wa-dialog>
+
+    <!-- Win -->
+    <wa-dialog id="win-dialog">Someone won!</wa-dialog>
+  </body>
 </html>

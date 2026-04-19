@@ -5,12 +5,6 @@
   --player-2-color: rgb(0, 200, 0);
 }
 
-dialog {
-  top: 40%;
-  left: 50%;
-  translate: -50% -50%;
-}
-
 #currently-playing {
   background-color: var(--player-1-color);
 }
@@ -19,3 +13,6 @@ dialog {
   background-color: var(--player-2-color);
 }
 
+.input-uppercase::part(input) {
+  text-transform: uppercase;
+}
