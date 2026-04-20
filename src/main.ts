@@ -1,4 +1,5 @@
 import "@awesome.me/webawesome/dist/styles/webawesome.css";
+
 // components
 import "@awesome.me/webawesome/dist/components/button/button.js";
 import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
@@ -8,143 +9,160 @@ import "@awesome.me/webawesome/dist/components/tab-panel/tab-panel.js";
 import "@awesome.me/webawesome/dist/components/input/input.js";
 import "@awesome.me/webawesome/dist/components/checkbox/checkbox.js";
 import "@awesome.me/webawesome/dist/components/progress-bar/progress-bar.js";
+import { allDefined } from "@awesome.me/webawesome";
 
 import { GameBoard, TileClickEvent } from "./board";
-import { type Position, Player } from "./utils";
+import {
+  type GlobalState,
+  type NewGameData,
+  type Position,
+  Player,
+} from "./utils";
 
-import { allDefined } from "@awesome.me/webawesome";
-import type WaInput from "@awesome.me/webawesome/dist/components/input/input.js";
+import { joinGameDialogSetup, newGameDialogSetup } from "./uiSetup";
+import { ConnectionMgr } from "./connectionMgr";
 
 async function main() {
-  const board = document.querySelector("#board")! as GameBoard;
-  board!.addEventListener("tile-click", (e) =>
-    onTileClick(board, (e as TileClickEvent).position),
+  await allDefined();
+
+  const state: GlobalState = {
+    playingPlayer: Player.Player1,
+    onlinePlayer: null,
+    gameEnded: false,
+    availableMoves: null,
+    board: document.querySelector("#board")! as GameBoard,
+    connectionMgr: new ConnectionMgr({
+      onStartGameReceived: (startGameData) => {
+        newGame(state, startGameData.newGame, startGameData.player);
+      },
+
+      onMoveReceived: (moveData) => {
+        move(state, moveData.oldPos, moveData.newPos, true);
+      },
+    }),
+  };
+
+  state.board!.addEventListener("tile-click", (e) =>
+    onTileClick(state, (e as TileClickEvent).position),
   );
 
-  await allDefined();
-  newGameDialogSetup(board);
-  joinGameDialogSetup();
+  newGameDialogSetup({
+    onNewLocalGame: (data) => {
+      newGame(state, data);
+    },
+
+    onNewOnlineGame: (newGameData, peerUserCode, onFinished) => {
+      state.connectionMgr.newPeerServer(peerUserCode, (success) => {
+        onFinished(success ? null : "error");
+        newGame(state, newGameData, Player.Player1);
+        state.connectionMgr.sendData({
+          type: "start",
+          player: Player.Player2,
+          newGame: newGameData,
+        });
+      });
+    },
+    onClosedWaitingForConnection: () => state.connectionMgr.closeConnection(),
+  });
+
+  joinGameDialogSetup((userJoinCode, onFinished) => {
+    state.connectionMgr.newPeerClient(userJoinCode, (success) =>
+      onFinished(success ? null : "error"),
+    );
+  });
+
+  newGame(state, { size: 4, winLength: 3, allowDiagonalMoves: true });
 }
 
-function onTileClick(board: GameBoard, position: Position): void {
-  if (gameEnded) {
+function newGame(
+  state: GlobalState,
+  data: NewGameData,
+  onlinePlayer: Player | null = null,
+) {
+  state.onlinePlayer = onlinePlayer;
+  state.gameEnded = false;
+  state.board.newGame(data);
+
+  const yourPlayer = document.querySelector("#you-are-player")!;
+  if (state.onlinePlayer === null) {
+    yourPlayer.setAttribute("hidden", "");
+  } else {
+    const yourPlayerIndicator = document.querySelector(
+      "#you-are-player-indicator",
+    )!;
+
+    yourPlayer.removeAttribute("hidden");
+    if (state.onlinePlayer == Player.Player1) {
+      yourPlayerIndicator.classList.remove("player-2");
+    } else {
+      yourPlayerIndicator.classList.add("player-2");
+    }
+  }
+}
+
+function move(
+  state: GlobalState,
+  oldPos: Position,
+  newPos: Position,
+  wasReceived: boolean = false,
+) {
+  if (state.gameEnded) {
     return;
   }
 
-  const tile = board.at(position)!;
+  state.board.move(oldPos, newPos);
 
-  if (tile.piece !== null && tile.piece.player === playingPlayer) {
-    const moves = board.findAvailableMoves(position);
-    board.setHighlightedTiles(moves);
-    availableMoves = { moves: moves, start: position };
+  if (state.onlinePlayer !== null && !wasReceived) {
+    state.connectionMgr.sendData({
+      type: "move",
+      oldPos: oldPos,
+      newPos: newPos,
+    });
+  }
+
+  if (state.playingPlayer == Player.Player2) {
+    state.playingPlayer = Player.Player1;
+    document.getElementById("currently-playing")?.classList.remove("player-2");
+  } else {
+    state.playingPlayer = Player.Player2;
+    document.getElementById("currently-playing")?.classList.add("player-2");
+  }
+
+  const winning = state.board.winning();
+  if (winning) {
+    document.querySelector("#win-dialog")?.toggleAttribute("open");
+    state.gameEnded = true;
+    state.connectionMgr.closeConnection();
+  }
+}
+
+function onTileClick(state: GlobalState, pos: Position) {
+  if (state.gameEnded) {
+    return;
+  }
+  const tile = state.board.at(pos)!;
+
+  if (
+    tile.piece !== null &&
+    tile.piece.player === state.playingPlayer &&
+    (state.onlinePlayer === null || state.onlinePlayer === state.playingPlayer)
+  ) {
+    const moves = state.board.findAvailableMoves(pos);
+    state.board.setHighlightedTiles(moves);
+    state.availableMoves = { moves: moves, start: pos };
     return;
   }
 
   if (
-    availableMoves &&
-    availableMoves.moves.some((e) => e.x === position.x && e.y === position.y)
+    state.availableMoves &&
+    state.availableMoves.moves.some((e) => e.x == pos.x && e.y == pos.y)
   ) {
-    board.move(availableMoves.start, position);
-    board.setHighlightedTiles([]);
-    availableMoves = null;
-
-    if (playingPlayer == Player.Player2) {
-      playingPlayer = Player.Player1;
-      document
-        .getElementById("currently-playing")
-        ?.classList.remove("player-2");
-    } else {
-      playingPlayer = Player.Player2;
-      document.getElementById("currently-playing")?.classList.add("player-2");
-    }
-
-    const winning = board.winning();
-    if (winning) {
-      // document.querySelector("#win-player-text")!.innerHTML =
-      //   `${winning == Player.Player1 ? "red" : "green"}`;
-      document.querySelector("#win-dialog")?.toggleAttribute("open");
-      gameEnded = true;
-    }
+    move(state, state.availableMoves.start, pos);
+    state.board.setHighlightedTiles([]);
+    state.availableMoves = null;
   }
 }
 
-function newGameDialogSetup(board: GameBoard) {
-  const newGameDialog = document.querySelector("#new-game-dialog");
-  const newGameForm = document.querySelector("#new-game-form")!;
-  const waitForConnectionDiv = document.querySelector(
-    "#online-game-wait-for-connection",
-  )!;
-
-  document.querySelector("#new-game-btn")?.addEventListener("click", () => {
-    newGameDialog?.toggleAttribute("open");
-    newGameForm.removeAttribute("hidden");
-    waitForConnectionDiv.setAttribute("hidden", "");
-  });
-
-  // TODO: data validation
-
-  newGameForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-
-    if ((e as SubmitEvent).submitter?.classList.contains("new-online-game")) {
-      console.log("online");
-      newGameForm.setAttribute("hidden", "");
-      waitForConnectionDiv.removeAttribute("hidden");
-      return;
-    }
-    const data = new FormData(newGameForm as HTMLFormElement);
-
-    board.newGame(
-      parseInt((data.get("board-size") as string | null) ?? "4"),
-      parseInt((data.get("win-len") as string | null) ?? "3"),
-      data.get("allow-diagonals") === "on",
-    );
-    newGameDialog?.toggleAttribute("open");
-    gameEnded = false;
-  });
-}
-
-function joinGameDialogSetup() {
-  const dialog = document.querySelector("#join-game-dialog")!;
-  const joinGameBtn = document.querySelector("#join-game-btn")!;
-  const joinBtn = document.querySelector("#join-game-dialog .join-btn")!;
-  const progressBar = document.querySelector(
-    "#join-game-dialog .connection-progress",
-  )!;
-  const joinForm = document.querySelector(
-    "#join-online-form",
-  )! as HTMLFormElement;
-  const codeInput = document.querySelector(
-    "#join-game-dialog .join-input",
-  ) as WaInput;
-
-  joinGameBtn.addEventListener("click", () => {
-    dialog.toggleAttribute("open");
-    codeInput.removeAttribute("disabled");
-    joinBtn.removeAttribute("disabled");
-    progressBar.setAttribute("hidden", "");
-  });
-
-  joinForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const connectionCodeData = new FormData(joinForm).get("connection-code");
-    if (!connectionCodeData) {
-      return;
-    }
-
-    const connectionCode = (connectionCodeData as String).toUpperCase();
-
-    codeInput.toggleAttribute("disabled");
-    joinBtn.toggleAttribute("disabled");
-    progressBar.removeAttribute("hidden");
-
-    console.log("connectionCode:", connectionCode);
-  });
-}
-
 customElements.define("game-board", GameBoard);
-let playingPlayer: Player = Player.Player1;
-let gameEnded = false;
-let availableMoves: { start: Position; moves: Array<Position> } | null = null;
 
 main();

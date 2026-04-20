@@ -5,14 +5,18 @@
   --player-2-color: rgb(0, 200, 0);
 }
 
-#currently-playing {
+.player-indicator {
   background-color: var(--player-1-color);
 }
 
-#currently-playing.player-2 {
+.player-indicator.player-2 {
   background-color: var(--player-2-color);
 }
 
 .input-uppercase::part(input) {
   text-transform: uppercase;
+}
+
+.unset-margin-block-end {
+  margin-block-end: unset !important;
 }

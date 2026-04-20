@@ -1,4 +1,4 @@
-import { type Tile, type Position, Player, type Piece } from "./utils";
+import { type Tile, type Position, Player, type Piece, type NewGameData } from "./utils";
 
 const baseStyle = `
 .tile {
@@ -36,6 +36,8 @@ const baseStyle = `
   background-color: rgb(0 0 0 / 0.3);
 }`;
 
+
+
 export class GameBoard extends HTMLElement {
   #tiles: Array<Array<Tile>> = []; // in the format [y][x]
   #allowDiagonalMoves: boolean = true;
@@ -57,20 +59,18 @@ export class GameBoard extends HTMLElement {
     this.#styleSheet.replaceSync(baseStyle);
 
     this.shadowRoot!.adoptedStyleSheets.push(this.#styleSheet);
-
-    this.newGame(4, 3, true);
   }
 
-  newGame(size: number, winLength: number, allowDiagonalMoves: boolean) {
-    this.#allowDiagonalMoves = allowDiagonalMoves;
-    this.#winLength = winLength;
-    this.#board.style.setProperty("--board-size", size.toString());
+  newGame(data: NewGameData) {
+    this.#allowDiagonalMoves = data.allowDiagonalMoves;
+    this.#winLength = data.winLength;
+    this.#board.style.setProperty("--board-size", data.size.toString());
     if (this.#tiles.length > 0) {
       this.#board.innerHTML = "";
     }
 
-    this.#tiles = Array.from({ length: size }, (_, y) =>
-      Array.from({ length: size }, (_, x) => {
+    this.#tiles = Array.from({ length: data.size }, (_, y) =>
+      Array.from({ length: data.size }, (_, x) => {
         const tile = this.#createTile({ x: x, y: y });
         this.#board.appendChild(tile);
         return { piece: null, gridElement: tile };
@@ -78,7 +78,7 @@ export class GameBoard extends HTMLElement {
     );
 
     this.#populateRow(0, Player.Player1, 0);
-    this.#populateRow(size - 1, Player.Player2, size);
+    this.#populateRow(data.size - 1, Player.Player2, data.size);
     this.#render();
   }
 

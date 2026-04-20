@@ -1,15 +1,15 @@
-import type { Player, Position } from "./utils";
+import type { Player, Position, NewGameData } from "./utils";
 
-export type ProtocolSpec =
-  | {
-      type: "move";
-      start: Position;
-      end: Position;
-    }
-  | {
-      type: "start";
-      boardSize: number;
-      winLength: number;
-      allowDiagonals: boolean;
-      player: Player; // which player is the receiving player
-    };
+export interface Move {
+  type: "move";
+  oldPos: Position;
+  newPos: Position;
+}
+
+export interface StartGameData {
+  type: "start";
+  player: Player; // which player the receiving player is
+  newGame: NewGameData;
+}
+
+export type ProtocolSpec = Move | StartGameData;
