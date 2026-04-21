@@ -130,9 +130,10 @@ function move(
 
   const winning = state.board.winning();
   if (winning) {
-    document.querySelector("#win-dialog")?.toggleAttribute("open");
     state.gameEnded = true;
     state.connectionMgr.closeConnection();
+
+    showWinDialog(winning);
   }
 }
 
@@ -161,6 +162,20 @@ function onTileClick(state: GlobalState, pos: Position) {
     state.board.setHighlightedTiles([]);
     state.availableMoves = null;
   }
+}
+
+function showWinDialog(winner: Player) {
+  const winDialog = document.querySelector("#win-dialog")!;
+  const winningPlayerLabel = document.querySelector("#win-player-name")!; 
+  if (winner == Player.Player1) {
+    winDialog.classList.remove("player-2");
+    winningPlayerLabel.innerHTML = "Červený"
+  } else {
+    winDialog.classList.add("player-2");  
+    winningPlayerLabel.innerHTML = "Zelený"
+  }
+
+ winDialog.toggleAttribute("open");
 }
 
 customElements.define("game-board", GameBoard);

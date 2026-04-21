@@ -13,6 +13,15 @@
   background-color: var(--player-2-color);
 }
 
+
+.win-dialog::part(dialog) {
+  background-color: hsl(from var(--player-1-color) h s 90%);
+}
+
+.win-dialog.player-2::part(dialog) {
+  background-color: hsl(from var(--player-2-color) h s 90%);
+}
+
 .input-uppercase::part(input) {
   text-transform: uppercase;
 }
